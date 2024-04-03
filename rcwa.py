@@ -29,16 +29,28 @@ def create_k_space(Px, Py, k0_x, k0_y, M, N, alpha=np.pi/2):
 
     return np.diag(k_x.flatten()), np.diag(k_y.flatten()), p, q
 
-def get_convolution_matrix(material_function, p, q):
+def get_Fourier_coefficients(material_function):
     '''
     Inputs:
         material_function - sampled complex-valued function of the material over the lattice coordinate system. Size NxN, where N is a power of 2. 
-        p, q - plane wave expansion index vectors
+        
+    Output:
+        Fourier coefficients of the material function
     '''
-    N2 = material_function.size
-    N_half = int(material_function.shape[0]/2)
+    return (1/material_function.size) * np.fft.fftshift(np.fft.fft2(material_function))
+
+
+def get_convolution_matrix(a_mn, p, q):
+    '''
+    Inputs:
+        a_mn - Fourier coefficients of the material function. Size NxN, where N is a power of 2. 
+        p, q - plane wave expansion index vectors
+
+    Output:
+        convolution_matrix - convolution matrix over (p,q) of the Fourier space of the material function.
+    '''
     
-    a_mn = (1/N2) * np.fft.fftshift(np.fft.fft2(material_function))
+    N_half = int(a_mn.shape[0]/2)
 
     convolution_matrix = np.zeros((p.size * q.size, p.size * q.size), dtype=complex)
 
@@ -49,3 +61,51 @@ def get_convolution_matrix(material_function, p, q):
             convolution_matrix[(j)*p.size + i, :] = a_mn[q_j-Q+N_half,p_i-P+N_half].flatten()
 
     return convolution_matrix
+
+def solve_eigenproblem(K_x, K_y, conv_er, conv_er_inv):
+    '''
+    Calculates the eigenmodes and eigenvalues of the propagation through a patterend layer.
+
+    Inputs:
+        K_x, K_y - Wavevectors of the plane wave expansion, rasterised.
+        conv_er - convolution matrix of the relative permittivity
+        conv_er_inv - inverse of the convolution matrix of the relative permittivity
+
+    Outputs:
+        W - Electric field amplitudes of the eigenmodes, stored in each column, with their respective propagation constant.
+        V - Magnetic field amplitudes ...
+        prop_constants - Ordered vector of propagation constants corresponding to each eigenmode.
+    '''
+    I = np.eye(K_x.shape)
+    P = np.vstack((np.hstack((K_x @ conv_er_inv @ K_y, I - K_x @ conv_er_inv @ K_x)), np.hstack((K_y @ conv_er_inv @ K_y - I, -K_y @ conv_er_inv @ K_x))))
+    Q = np.vstack((np.hstack(K_x @ K_y, conv_er - K_x**2), np.hstack(K_y**2 - conv_er, -K_y @ K_x)))
+    omega = P @ Q
+
+    eig_values, W = np.linalg.eig(omega)
+    prop_constants = np.sqrt(eig_values)
+    V = Q @ W @ np.diag(1/prop_constants)
+
+    return W, V, prop_constants
+
+def solve_eignproblem_uniform(K_x, K_y, er):
+    '''
+    Calculates the eigenmodes and eigenvalues of the propagation through a homogeneous layer.
+
+    Inputs:
+        K_x, K_y - Wavevectors of the plane wave expansion, rasterised.
+        er - relative permittivity of the layer
+
+    Outputs:
+        V - Magnetic field amplitudes of each mode, the electric field amplitudes are simply 1.
+        prop_constants - Ordered vector of propagation constants corresponding to each eigenmode.
+    '''
+    I = np.eye(K_x.shape)
+    Z = np.zeros(K_x.shape)
+
+    Q = np.vstack((np.hstack(K_x @ K_y, I*er - K_x**2), np.hstack(K_y**2 - I*er, -K_y @ K_x)))
+    K_z = np.sqrt(er*I - K_x**2 - K_y**2)
+    prop_constants = np.vstack((np.hstack((1j*K_z, Z)), np.hstack(Z, 1j*K_z)))
+    V = Q @ np.linalg.inv(prop_constants)
+
+    return V, np.diag(prop_constants)
+
