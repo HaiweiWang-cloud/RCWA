@@ -13,7 +13,6 @@ def create_k_space(Px, Py, k0_x, k0_y, M, N, alpha=np.pi/2):
 
     Outputs:
     K_x, K_y - diagonal matrices with the wavevectors of the expansion rasterised.
-    P, Q - indices of the Floquet modes.
     '''
     p = np.arange(-M, M+1)
     q = np.arange(-N, N+1)
@@ -88,8 +87,6 @@ def solve_eigenproblem(K_x, K_y, conv_er, conv_er_inv):
     prop_constants = np.sqrt(eig_values)
     V = Q @ W @ np.diag(1/prop_constants)
 
-    print(1/prop_constants)
-
     return W, V, prop_constants
 
 def solve_eigenproblem_uniform(K_x, K_y, er):
@@ -109,7 +106,7 @@ def solve_eigenproblem_uniform(K_x, K_y, er):
 
     Q = np.vstack((np.hstack((K_x @ K_y, I*er - K_x**2)), np.hstack((K_y**2 - I*er, -K_y @ K_x))))
     K_z = np.sqrt(er*I - K_x**2 - K_y**2 + 0j)
-    prop_constants = np.vstack((np.hstack((-1j*K_z, Z)), np.hstack((Z, 1j*K_z))))
+    prop_constants = np.vstack((np.hstack((1j*K_z, Z)), np.hstack((Z, 1j*K_z))))
     V = Q @ np.linalg.inv(prop_constants)
 
     return np.eye(2*K_x.shape[0]), V, np.diag(prop_constants)
