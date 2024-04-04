@@ -27,7 +27,7 @@ def create_k_space(Px, Py, k0_x, k0_y, M, N, alpha=np.pi/2):
         k_x = k0_x + 2*np.pi/Px * P
         k_y = k0_y + 2*np.pi/Py * Q - 2*np.pi/Px/np.tan(alpha) * P 
 
-    return np.diag(k_x.flatten()), np.diag(k_y.flatten()), p, q
+    return np.diag(k_x.flatten()), np.diag(k_y.flatten())
 
 def get_Fourier_coefficients(material_function):
     '''
@@ -40,11 +40,11 @@ def get_Fourier_coefficients(material_function):
     return (1/material_function.size) * np.fft.fftshift(np.fft.fft2(material_function))
 
 
-def get_convolution_matrix(a_mn, p, q):
+def get_convolution_matrix(a_mn, M, N):
     '''
     Inputs:
         a_mn - Fourier coefficients of the material function. Size NxN, where N is a power of 2. 
-        p, q - plane wave expansion index vectors
+        M, N - number of plane waves to expand to.
 
     Output:
         convolution_matrix - convolution matrix over (p,q) of the Fourier space of the material function.
@@ -53,6 +53,9 @@ def get_convolution_matrix(a_mn, p, q):
     N_half = int(a_mn.shape[0]/2)
 
     convolution_matrix = np.zeros((p.size * q.size, p.size * q.size), dtype=complex)
+
+    p = np.arange(-M, M+1)
+    q = np.arange(-N, N+1)
 
     P, Q = np.meshgrid(p,q)
 
@@ -107,5 +110,5 @@ def solve_eignproblem_uniform(K_x, K_y, er):
     prop_constants = np.vstack((np.hstack((1j*K_z, Z)), np.hstack(Z, 1j*K_z)))
     V = Q @ np.linalg.inv(prop_constants)
 
-    return V, np.diag(prop_constants)
+    return I, V, np.diag(prop_constants)
 
