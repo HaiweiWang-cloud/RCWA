@@ -52,10 +52,10 @@ def get_convolution_matrix(a_mn, M, N):
     
     N_half = int(a_mn.shape[0]/2)
 
-    convolution_matrix = np.zeros((p.size * q.size, p.size * q.size), dtype=complex)
-
     p = np.arange(-M, M+1)
     q = np.arange(-N, N+1)
+
+    convolution_matrix = np.zeros((p.size * q.size, p.size * q.size), dtype=complex)
 
     P, Q = np.meshgrid(p,q)
 
@@ -79,18 +79,20 @@ def solve_eigenproblem(K_x, K_y, conv_er, conv_er_inv):
         V - Magnetic field amplitudes ...
         prop_constants - Ordered vector of propagation constants corresponding to each eigenmode.
     '''
-    I = np.eye(K_x.shape)
+    I = np.eye(K_x.shape[0])
     P = np.vstack((np.hstack((K_x @ conv_er_inv @ K_y, I - K_x @ conv_er_inv @ K_x)), np.hstack((K_y @ conv_er_inv @ K_y - I, -K_y @ conv_er_inv @ K_x))))
-    Q = np.vstack((np.hstack(K_x @ K_y, conv_er - K_x**2), np.hstack(K_y**2 - conv_er, -K_y @ K_x)))
+    Q = np.vstack((np.hstack((K_x @ K_y, conv_er - K_x**2)), np.hstack((K_y**2 - conv_er, -K_y @ K_x))))
     omega = P @ Q
 
     eig_values, W = np.linalg.eig(omega)
     prop_constants = np.sqrt(eig_values)
     V = Q @ W @ np.diag(1/prop_constants)
 
+    print(1/prop_constants)
+
     return W, V, prop_constants
 
-def solve_eignproblem_uniform(K_x, K_y, er):
+def solve_eigenproblem_uniform(K_x, K_y, er):
     '''
     Calculates the eigenmodes and eigenvalues of the propagation through a homogeneous layer.
 
@@ -102,13 +104,13 @@ def solve_eignproblem_uniform(K_x, K_y, er):
         V - Magnetic field amplitudes of each mode, the electric field amplitudes are simply 1.
         prop_constants - Ordered vector of propagation constants corresponding to each eigenmode.
     '''
-    I = np.eye(K_x.shape)
+    I = np.eye(K_x.shape[0])
     Z = np.zeros(K_x.shape)
 
-    Q = np.vstack((np.hstack(K_x @ K_y, I*er - K_x**2), np.hstack(K_y**2 - I*er, -K_y @ K_x)))
-    K_z = np.sqrt(er*I - K_x**2 - K_y**2)
-    prop_constants = np.vstack((np.hstack((1j*K_z, Z)), np.hstack(Z, 1j*K_z)))
+    Q = np.vstack((np.hstack((K_x @ K_y, I*er - K_x**2)), np.hstack((K_y**2 - I*er, -K_y @ K_x))))
+    K_z = np.sqrt(er*I - K_x**2 - K_y**2 + 0j)
+    prop_constants = np.vstack((np.hstack((-1j*K_z, Z)), np.hstack((Z, 1j*K_z))))
     V = Q @ np.linalg.inv(prop_constants)
 
-    return I, V, np.diag(prop_constants)
+    return np.eye(2*K_x.shape[0]), V, np.diag(prop_constants)
 

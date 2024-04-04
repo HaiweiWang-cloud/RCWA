@@ -1,5 +1,5 @@
 import numpy as np
-import rcwa
+from rcwa import *
 
 def getInitialSMatrix(N):
     '''
@@ -30,15 +30,14 @@ def build_layer_S_matrix(K_x, K_y, W, V, prop_constants, k_0, L):
     Outputs:
         Ordered tuple of S-matrix components (S11, S12, S21, S22), here by symmetry S12 = S21, S11 = S22.
     '''
-    I = np.eye(W.shape)
     V0 = solve_eigenproblem_uniform(K_x, K_y, 1)[1] 
 
     X = np.diag(np.exp(-prop_constants*k_0*L))
     W_inv = np.linalg.inv(W)
     V_inv = np.linalg.inv(V)
-    A = W_inv + V_inv @ V_0
+    A = W_inv + V_inv @ V0
     A_inv = np.linalg.inv(A) 
-    B = W_inv - V_inv @ V_0
+    B = W_inv - V_inv @ V0
     F = np.linalg.inv(A - X @ B @ A_inv @ X @ B) 
     S11 = F @ (X @ B @ A_inv @ X @ A - B)
     S12 = F @ X @ (A - B @ A_inv @ B)
@@ -54,7 +53,7 @@ def starProduct(S_a, S_b):
         Output:
             S_ab: the star product of the two S-matrices
     '''
-    N = S_a.shape[0]
+    N = S_a[0].shape[0]
     I = np.identity(N)
     F = S_a[1] @ np.linalg.inv(I - S_b[0] @ S_a[3])
     D = S_b[2] @ np.linalg.inv(I - S_a[3] @ S_b[0])
