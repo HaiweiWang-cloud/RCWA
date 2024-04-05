@@ -101,11 +101,11 @@ def solve_eigenproblem_uniform(K_x, K_y, er):
         V - Magnetic field amplitudes of each mode, the electric field amplitudes are simply 1.
         prop_constants - Ordered vector of propagation constants corresponding to each eigenmode.
     '''
-    I = np.eye(K_x.shape[0])
+    I = np.conjugate(np.eye(K_x.shape[0]))
     Z = np.zeros(K_x.shape)
 
     Q = np.vstack((np.hstack((K_x @ K_y, I*er - K_x**2)), np.hstack((K_y**2 - I*er, -K_y @ K_x))))
-    K_z = np.sqrt(er*I - K_x**2 - K_y**2 + 0j)
+    K_z = np.emath.sqrt(er*I - K_x**2 - K_y**2)
     prop_constants = np.vstack((np.hstack((1j*K_z, Z)), np.hstack((Z, 1j*K_z))))
     V = Q @ np.linalg.inv(prop_constants)
 

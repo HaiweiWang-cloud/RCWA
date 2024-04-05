@@ -91,23 +91,23 @@ class Device:
         N = 1/np.sqrt(c_inc_x**2+c_inc_y**2+c_inc_z**2)
 
         s_inc = np.zeros(2*(2*self.M+1)*(2*self.N+1))
-        s_inc[self.N*(2*self.M+1)+self.M] = c_inc_x / N
-        s_inc[(2*self.M+1)*(2*self.N+1) + self.N*(2*self.M+1)+self.M] = c_inc_y / N
-        k_z_inc = np.sqrt(er_ref - self.k0_x**2 - self.k0_y**2)
+        s_inc[self.N*(2*self.M+1)+self.M] = c_inc_x * N
+        s_inc[(2*self.M+1)*(2*self.N+1) + self.N*(2*self.M+1)+self.M] = c_inc_y * N
+        k_z_inc = np.emath.sqrt(er_ref - self.k0_x**2 - self.k0_y**2)
 
         S11, S12, S21, S22 = self.get_global_Smatrix(er_ref, er_trn, self.get_device_Smatrix(k_0))
 
         s_ref = S11 @ s_inc
         s_trn = S21 @ s_inc
 
-        I = np.eye(self.K_x.shape[0])
-        K_z_ref = -np.sqrt(er_ref*I - self.K_x**2 - self.K_y**2 + 0j)
+        I = np.conjugate(np.eye(self.K_x.shape[0]))
+        K_z_ref = -np.conjugate(np.emath.sqrt(np.conjugate(er_ref)*I - self.K_x**2 - self.K_y**2))
         r_x = s_ref[0:(2*self.N+1)*(2*self.M+1)]
         r_y = s_ref[(2*self.N+1)*(2*self.M+1):2*(2*self.N+1)*(2*self.M+1)]
         r_z = -np.linalg.inv(K_z_ref) @ (self.K_x @ r_x + self.K_y @ r_y) 
         r2 = r_x*np.conjugate(r_x) + r_y*np.conjugate(r_y) + r_z*np.conjugate(r_z)
 
-        K_z_trn = np.sqrt(er_trn*I - self.K_x**2 - self.K_y**2 +0j)
+        K_z_trn = np.conjugate(np.emath.sqrt(np.conjugate(er_trn)*I - self.K_x**2 - self.K_y**2))
         t_x = s_trn[0:(2*self.N+1)*(2*self.M+1)]
         t_y = s_trn[(2*self.N+1)*(2*self.M+1):2*(2*self.N+1)*(2*self.M+1)]
         t_z = -np.linalg.inv(K_z_trn) @ (self.K_x @ t_x + self.K_y @ t_y)
